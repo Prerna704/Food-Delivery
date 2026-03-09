@@ -22,7 +22,7 @@ const Login = ({ url }) => {
     event.preventDefault();
     const response = await axios.post(url + "/api/user/login", data);
     if (response.data.success) {
-      if (response.data.role === "admin1") {
+      if (response.data.role === "admin") {
         setToken(response.data.token);
         setAdmin(true);
         localStorage.setItem("token", response.data.token);
