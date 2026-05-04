@@ -1,14 +1,26 @@
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import "./Navbar.css";
 import { assets } from "../../assets/frontend_assets/assets";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { StoreContext } from "../../context/StoreContext";
 import { toast } from "react-toastify";
 
 const Navbar = ({ setShowLogin }) => {
-  const [menu, setMenu] = useState("home");
   const { getTotalCartAmount, token, setToken } = useContext(StoreContext);
   const navigate=useNavigate();
+  const location = useLocation();
+  const isCheckoutNav =
+    location.pathname === "/cart" ||
+    location.pathname === "/order" ||
+    location.pathname === "/myorders";
+
+  const isActive = (pathKey) => {
+    if (pathKey === "home") return location.pathname === "/";
+    if (pathKey === "cart") return location.pathname === "/cart";
+    if (pathKey === "orders") return location.pathname === "/myorders";
+    if (pathKey === "order") return location.pathname === "/order";
+    return false;
+  };
 
   const logout=()=>{
     localStorage.removeItem("token");
@@ -24,32 +36,47 @@ const Navbar = ({ setShowLogin }) => {
       <ul className="navbar-menu">
         <Link
           to="/"
-          onClick={() => setMenu("home")}
-          className={menu === "home" ? "active" : ""}
+          className={isActive("home") ? "active" : ""}
         >
           home
         </Link>
-        <a
-          href="#explore-menu"
-          onClick={() => setMenu("menu")}
-          className={menu === "menu" ? "active" : ""}
-        >
-          menu
-        </a>
-        <a
-          href="#app-download"
-          onClick={() => setMenu("mobile-app")}
-          className={menu === "mobile-app" ? "active" : ""}
-        >
-          mobile-app
-        </a>
-        <a
-          href="#footer"
-          onClick={() => setMenu("contact-us")}
-          className={menu === "contact-us" ? "active" : ""}
-        >
-          contact us
-        </a>
+        {isCheckoutNav ? (
+          <>
+            <Link
+              to="/cart"
+              className={isActive("cart") ? "active" : ""}
+            >
+              add to cart
+            </Link>
+            <Link
+              to="/myorders"
+              className={isActive("orders") ? "active" : ""}
+            >
+              order
+            </Link>
+          </>
+        ) : (
+          <>
+            <a
+              href="#explore-menu"
+              className=""
+            >
+              menu
+            </a>
+            <a
+              href="#app-download"
+              className=""
+            >
+              mobile-app
+            </a>
+            <a
+              href="#footer"
+              className=""
+            >
+              contact us
+            </a>
+          </>
+        )}
       </ul>
       <div className="navbar-right">
         <img src={assets.search_icon} alt="" />

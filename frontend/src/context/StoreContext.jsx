@@ -7,26 +7,29 @@ export const StoreContext = createContext(null);
 const StoreContextProvider = (props) => {
   const [cartItems, setCartItems] = useState({});
   const url = import.meta.env.VITE_API_URL || "http://localhost:4000";
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [food_list, setFoodList] = useState([]);
 
   const addToCart = async (itemId) => {
+    if (!token) {
+      toast.error("Please login first");
+      return;
+    }
+
     if (!cartItems[itemId]) {
       setCartItems((prev) => ({ ...prev, [itemId]: 1 }));
     } else {
       setCartItems((prev) => ({ ...prev, [itemId]: prev[itemId] + 1 }));
     }
-    if (token) {
-      const response=await axios.post(
-        url + "/api/cart/add",
-        { itemId },
-        { headers: { token } }
-      );
-      if(response.data.success){
-        toast.success("item Added to Cart")
-      }else{
-        toast.error("Something went wrong")
-      }
+    const response=await axios.post(
+      url + "/api/cart/add",
+      { itemId },
+      { headers: { token } }
+    );
+    if(response.data.success){
+      toast.success("item Added to Cart")
+    }else{
+      toast.error("Something went wrong")
     }
   };
 
@@ -75,16 +78,21 @@ const StoreContextProvider = (props) => {
     setCartItems(response.data.cartData);
   };
 
+  const clearCart = async () => {
+    setCartItems({});
+    if (!token) return;
+    await axios.post(url + "/api/cart/clear", {}, { headers: { token } });
+  };
+
   useEffect(() => {
     async function loadData() {
       await fetchFoodList();
-      if (localStorage.getItem("token")) {
-        setToken(localStorage.getItem("token"));
-        await loadCardData(localStorage.getItem("token"));
+      if (token) {
+        await loadCardData(token);
       }
     }
     loadData();
-  }, []);
+  }, [token]);
 
   const contextValue = {
     food_list,
@@ -96,6 +104,7 @@ const StoreContextProvider = (props) => {
     url,
     token,
     setToken,
+    clearCart,
   };
   return (
     <StoreContext.Provider value={contextValue}>

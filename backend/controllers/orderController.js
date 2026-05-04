@@ -3,18 +3,12 @@ import crypto from 'crypto';
 import orderModel from '../models/orderModel.js';
 // import cartModel from '../models/cartModel.js'; // If you have cart model
 
-// Initialize Razorpay
-const razorpayInstance = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
 // Create Razorpay Order
 export const createRazorpayOrder = async (req, res) => {
   try {
-    const razorpayMode = (process.env.RAZORPAY_MODE || "test").toLowerCase();
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const configuredMode = (process.env.RAZORPAY_MODE || "test").toLowerCase();
+    const keyId = (process.env.RAZORPAY_KEY_ID || "").trim();
+    const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
 
     if (!keyId || !keySecret) {
       return res.status(500).json({
@@ -23,19 +17,8 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    if (razorpayMode === "live" && !keyId.startsWith("rzp_live_")) {
-      return res.status(500).json({
-        success: false,
-        message: "RAZORPAY_MODE is live but test key is configured"
-      });
-    }
-
-    if (razorpayMode === "test" && !keyId.startsWith("rzp_test_")) {
-      return res.status(500).json({
-        success: false,
-        message: "RAZORPAY_MODE is test but live key is configured"
-      });
-    }
+    // Auto-detect mode from key prefix to avoid hard failures on env mismatch.
+    const detectedMode = keyId.startsWith("rzp_live_") ? "live" : "test";
 
     const { amount, currency = "INR" } = req.body;
 
@@ -54,6 +37,11 @@ export const createRazorpayOrder = async (req, res) => {
       payment_capture: 1, // Auto capture payment
     };
 
+    const razorpayInstance = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+
     const order = await razorpayInstance.orders.create(options);
 
     res.status(200).json({
@@ -62,14 +50,20 @@ export const createRazorpayOrder = async (req, res) => {
       amount: order.amount,
       currency: order.currency,
       key: keyId,
-      mode: razorpayMode
+      mode: detectedMode,
+      configuredMode
     });
   } catch (error) {
     console.error("Razorpay order creation error:", error);
+    const razorpayDescription =
+      error?.error?.description ||
+      error?.description ||
+      error?.message ||
+      "Failed to create order";
     res.status(500).json({
       success: false,
       message: "Failed to create order",
-      error: error.message
+      error: razorpayDescription
     });
   }
 };
@@ -316,5 +310,21 @@ export const verifyOrder = async (req, res) => {
     return res.status(200).json({ success: success === "true" || success === true });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Verification failed" });
+  }
+};
+
+export const razorpayConfigDebug = async (req, res) => {
+  try {
+    const mode = (process.env.RAZORPAY_MODE || "test").toLowerCase();
+    const keyId = process.env.RAZORPAY_KEY_ID || "";
+    return res.status(200).json({
+      success: true,
+      mode,
+      keyPrefix: keyId.slice(0, 9),
+      server: "local-backend",
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Debug failed" });
   }
 };

@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import "./Cart.css";
 import { StoreContext } from "../../context/StoreContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Cart = () => {
   const {
@@ -11,10 +12,20 @@ const Cart = () => {
     addToCart,
     removeFromCart,
     getTotalCartAmount,
-    url
+    url,
+    token
   } = useContext(StoreContext);
 
   const navigate=useNavigate();
+
+  const proceedToCheckout = () => {
+    if (!token) {
+      toast.error("Please login first");
+      navigate("/");
+      return;
+    }
+    navigate("/order");
+  };
 
   return (
     <div className="cart">
@@ -68,7 +79,7 @@ const Cart = () => {
               <b>₹{getTotalCartAmount()===0?0:getTotalCartAmount()+2}</b>
             </div>
           </div>
-          <button onClick={()=>navigate('/order')}>PROCEED TO CHECKOUT</button>
+          <button onClick={proceedToCheckout}>PROCEED TO CHECKOUT</button>
         </div>
         <div className="cart-promocode">
           <div>

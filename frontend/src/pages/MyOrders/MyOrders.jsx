@@ -3,10 +3,15 @@ import "./MyOrders.css";
 import { StoreContext } from "../../context/StoreContext";
 import axios from "axios";
 import { assets } from "../../assets/frontend_assets/assets";
+import { toast } from "react-toastify";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const MyOrders = () => {
   const { url, token } = useContext(StoreContext);
   const [data, setData] = useState([]);
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get("tab") === "history" ? "history" : "active");
+  const navigate = useNavigate();
 
   const fetchOrders = async () => {
     const response = await axios.post(
@@ -22,13 +27,36 @@ const MyOrders = () => {
   useEffect(() => {
     if (token) {
       fetchOrders();
+    } else {
+      setData([]);
+      toast.error("Please login first");
+      navigate("/");
     }
-  }, [token]);
+  }, [token, navigate]);
+
+  const activeOrders = data.filter((order) => order.status !== "Delivered");
+  const historyOrders = data.filter((order) => order.status === "Delivered");
+  const ordersToShow = tab === "active" ? activeOrders : historyOrders;
+
   return (
     <div className="my-orders">
       <h2>Orders</h2>
+      <div className="orders-tabs">
+        <button
+          className={tab === "active" ? "tab-btn active" : "tab-btn"}
+          onClick={() => setTab("active")}
+        >
+          Active Orders
+        </button>
+        <button
+          className={tab === "history" ? "tab-btn active" : "tab-btn"}
+          onClick={() => setTab("history")}
+        >
+          Order History
+        </button>
+      </div>
       <div className="container">
-        {data.map((order, index) => {
+        {ordersToShow.map((order, index) => {
           return (
             <div key={index} className="my-orders-order">
               <img src={assets.parcel_icon} alt="" />

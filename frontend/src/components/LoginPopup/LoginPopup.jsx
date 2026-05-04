@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 const LoginPopup = ({ setShowLogin }) => {
   const {url, setToken } = useContext(StoreContext);
   const [currentState, setCurrentState] = useState("Login");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState({
     name: "",
     email: "",
@@ -22,20 +23,28 @@ const LoginPopup = ({ setShowLogin }) => {
 
   const onLogin = async (event) => {
     event.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     let newUrl = url;
     if (currentState === "Login") {
       newUrl += "/api/user/login";
     } else {
       newUrl += "/api/user/register";
     }
-    const response = await axios.post(newUrl, data);
-    if (response.data.success) {
-      setToken(response.data.token);
-      localStorage.setItem("token", response.data.token);
-      toast.success("Login Successfully")
-      setShowLogin(false);
-    }else{
-      toast.error(response.data.message);
+    try {
+      const response = await axios.post(newUrl, data, { timeout: 15000 });
+      if (response.data.success) {
+        setToken(response.data.token);
+        localStorage.setItem("token", response.data.token);
+        toast.success("Login Successfully");
+        setShowLogin(false);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Login failed, please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
   return (
@@ -79,8 +88,12 @@ const LoginPopup = ({ setShowLogin }) => {
             required
           />
         </div>
-        <button type="submit">
-          {currentState === "Sign Up" ? "Create Account" : "Login"}
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting
+            ? "Please wait..."
+            : currentState === "Sign Up"
+            ? "Create Account"
+            : "Login"}
         </button>
         <div className="login-popup-condition">
           <input type="checkbox" required />

@@ -7,7 +7,8 @@ import {
   userOrders,
   createRazorpayOrder,
   verifyPaymentAndPlaceOrder,
-  verifyOrder
+  verifyOrder,
+  razorpayConfigDebug
 } from "../controllers/orderController.js";
 
 const orderRouter = express.Router();
@@ -16,6 +17,7 @@ const orderRouter = express.Router();
 orderRouter.post("/create-order", authMiddleware, createRazorpayOrder);
 orderRouter.post("/verify-payment", authMiddleware, verifyPaymentAndPlaceOrder);
 orderRouter.post("/verify", verifyOrder);
+orderRouter.get("/debug-config", razorpayConfigDebug);
 
 // Existing routes
 orderRouter.post("/place", authMiddleware, placeOrder);
